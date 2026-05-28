@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold a team-shared Next.js boilerplate with Tailwind, shadcn/ui, NextAuth v5 (Google OAuth), and Prisma + Neon PostgreSQL.
+**Goal:** Build a minimal, public Next.js 15 boilerplate with Tailwind v4, shadcn/ui, Auth.js v5 Google OAuth, Prisma, and Neon — ready to clone and use in under 15 minutes.
 
-**Architecture:** Minimal flat structure using App Router. Auth handled by NextAuth v5 with Prisma Adapter storing sessions in Neon PostgreSQL. Route protection via Next.js middleware.
+**Architecture:** Flat App Router structure. Auth.js v5 handles Google OAuth with a Prisma adapter persisting sessions to Neon (serverless PostgreSQL). All auth/db config lives in `lib/auth.ts` and `lib/db.ts`. Auth pages live under `app/(auth)/` (route group, no URL prefix).
 
-**Tech Stack:** Next.js 14+, pnpm, Tailwind CSS, shadcn/ui, NextAuth v5, Prisma, Neon (PostgreSQL)
+**Tech Stack:** Next.js 15 · TypeScript strict · Tailwind CSS v4 · shadcn/ui · Auth.js v5 (next-auth@beta) · @auth/prisma-adapter · Prisma · Neon · pnpm
 
 ---
 
@@ -14,99 +14,139 @@
 
 | File | Purpose |
 |------|---------|
-| `prisma/schema.prisma` | NextAuth DB models (User, Account, Session, VerificationToken) |
-| `src/lib/db.ts` | Prisma Client singleton |
-| `src/lib/auth.ts` | NextAuth v5 config (Google provider + Prisma adapter) |
-| `src/lib/utils.ts` | shadcn utility (cn) |
-| `src/app/api/auth/[...nextauth]/route.ts` | NextAuth API route handler |
-| `src/app/layout.tsx` | Root layout with SessionProvider |
-| `src/app/page.tsx` | Home page (auth-aware UI) |
-| `src/app/sign-in/page.tsx` | Sign-in page with Google button |
-| `src/components/ui/` | shadcn components |
-| `middleware.ts` | Route protection |
-| `.env.example` | Required env vars reference |
+| `package.json` | Dependencies and scripts |
+| `tsconfig.json` | TypeScript config (strict mode) |
+| `next.config.ts` | Next.js config |
+| `prisma/schema.prisma` | Auth.js adapter tables: User, Account, Session, VerificationToken |
+| `lib/db.ts` | Prisma client singleton (dev hot-reload safe) |
+| `lib/auth.ts` | Auth.js config — Google provider, Prisma adapter, custom page paths |
+| `app/api/auth/[...nextauth]/route.ts` | Auth.js GET/POST handlers |
+| `middleware.ts` | Session propagation on every non-static route |
+| `app/layout.tsx` | Root layout with SessionProvider |
+| `app/page.tsx` | Home — shows session state, login/logout |
+| `app/(auth)/login/page.tsx` | Google sign-in page |
+| `app/(auth)/error/page.tsx` | Auth error display |
+| `components/ui/button.tsx` | shadcn Button (added by CLI) |
+| `components/ui/card.tsx` | shadcn Card (added by CLI) |
+| `.env.example` | Required environment variables with comments |
+| `README.md` | Step-by-step setup guide |
 
 ---
 
-### Task 1: Scaffold Next.js App
+### Task 1: Initialize Next.js 15 project
 
 **Files:**
-- Create: `package.json`, `next.config.ts`, `tsconfig.json`, `tailwind.config.ts`
+- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `app/layout.tsx`, `app/page.tsx`, `app/globals.css`, `.gitignore`, and other scaffolded files
 
-- [ ] **Step 1: Initialize Next.js project**
+- [ ] **Step 1: Run create-next-app in the project directory**
 
 ```bash
-pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --no-turbopack
+pnpm create next-app@latest . \
+  --typescript \
+  --tailwind \
+  --eslint \
+  --app \
+  --no-src-dir \
+  --import-alias "@/*" \
+  --use-pnpm
 ```
-When prompted to confirm current directory — yes. Expected: Next.js project scaffolded in current directory.
 
-- [ ] **Step 2: Verify dev server starts**
+If prompted "The directory contains files that could conflict", select **Yes** to continue.
+
+- [ ] **Step 2: Verify TypeScript strict mode**
+
+Open `tsconfig.json`. Confirm `"strict": true` exists under `compilerOptions`. If missing, add it:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true
+  }
+}
+```
+
+- [ ] **Step 3: Verify the dev server starts**
 
 ```bash
 pnpm dev
 ```
-Open http://localhost:3000 — default Next.js page should render. Stop server with Ctrl+C.
 
-- [ ] **Step 3: Commit**
-
-```bash
-git add .
-git commit -m "chore: scaffold Next.js app with TypeScript and Tailwind"
-```
-
----
-
-### Task 2: Install and Configure shadcn/ui
-
-**Files:**
-- Create: `components.json`
-- Modify: `src/lib/utils.ts`
-- Create: `src/components/ui/button.tsx`, `card.tsx`, `input.tsx`, `avatar.tsx`, `dropdown-menu.tsx`
-
-- [ ] **Step 1: Initialize shadcn**
-
-```bash
-pnpm dlx shadcn@latest init -d
-```
-`-d` uses defaults (New York style, Zinc base color, CSS variables on).
-
-- [ ] **Step 2: Add required components**
-
-```bash
-pnpm dlx shadcn@latest add button card input avatar dropdown-menu
-```
-
-- [ ] **Step 3: Verify components exist**
-
-```bash
-ls src/components/ui/
-```
-Expected output includes: `button.tsx  card.tsx  input.tsx  avatar.tsx  dropdown-menu.tsx`
+Expected: server starts on `http://localhost:3000` with no errors. Stop with Ctrl+C.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add .
-git commit -m "chore: add shadcn/ui with base components"
+git commit -m "feat: initialize Next.js 15 project"
 ```
 
 ---
 
-### Task 3: Set Up Prisma + Neon
+### Task 2: Initialize shadcn/ui and add base components
+
+**Files:**
+- Create: `components.json`, `lib/utils.ts`, `components/ui/button.tsx`, `components/ui/card.tsx`
+- Modify: `app/globals.css` (adds CSS variables for theming)
+
+- [ ] **Step 1: Initialize shadcn**
+
+```bash
+pnpm dlx shadcn@latest init
+```
+
+When prompted:
+- Style: **Default**
+- Base color: **Neutral**
+- CSS variables: **Yes**
+
+- [ ] **Step 2: Add Button and Card components**
+
+```bash
+pnpm dlx shadcn@latest add button card
+```
+
+Expected: creates `components/ui/button.tsx` and `components/ui/card.tsx`.
+
+- [ ] **Step 3: Verify components exist**
+
+```bash
+ls components/ui/
+```
+
+Expected: `button.tsx  card.tsx`
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "feat: add shadcn/ui with Button and Card"
+```
+
+---
+
+### Task 3: Install Prisma and configure Auth.js schema
 
 **Files:**
 - Create: `prisma/schema.prisma`
-- Create: `src/lib/db.ts`
-- Create: `.env.example`, `.env.local`
 
 - [ ] **Step 1: Install Prisma**
 
 ```bash
-pnpm add prisma @prisma/client
-pnpm prisma init
+pnpm add @prisma/client
+pnpm add -D prisma
 ```
 
-- [ ] **Step 2: Replace prisma/schema.prisma**
+- [ ] **Step 2: Initialize Prisma**
+
+```bash
+pnpm prisma init --datasource-provider postgresql
+```
+
+Expected: creates `prisma/schema.prisma` and adds `DATABASE_URL` placeholder to `.env`.
+
+- [ ] **Step 3: Replace prisma/schema.prisma with Auth.js adapter schema**
+
+Overwrite `prisma/schema.prisma` entirely:
 
 ```prisma
 generator client {
@@ -126,10 +166,11 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Account {
-  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -141,361 +182,569 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  @@unique([provider, providerAccountId])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
 }
 
 model Session {
-  id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model VerificationToken {
   identifier String
-  token      String   @unique
+  token      String
   expires    DateTime
 
-  @@unique([identifier, token])
+  @@id([identifier, token])
 }
 ```
 
-- [ ] **Step 3: Create .env.local**
-
-Create `.env.local` in project root (fill in your actual Neon connection string):
-
-```
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-AUTH_SECRET=""
-AUTH_GOOGLE_ID=""
-AUTH_GOOGLE_SECRET=""
-```
-
-- [ ] **Step 4: Create .env.example**
-
-```
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-AUTH_SECRET="run: pnpm dlx auth secret"
-AUTH_GOOGLE_ID="from Google Cloud Console"
-AUTH_GOOGLE_SECRET="from Google Cloud Console"
-```
-
-- [ ] **Step 5: Verify .env.local is gitignored**
-
-Check `.gitignore` contains `.env.local`. If missing, add it.
-
-- [ ] **Step 6: Create src/lib/db.ts**
-
-```typescript
-import { PrismaClient } from "@prisma/client";
-
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const db = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
-```
-
-- [ ] **Step 7: Push schema to Neon**
+- [ ] **Step 4: Commit**
 
 ```bash
-pnpm prisma db push
+git add prisma/schema.prisma
+git commit -m "feat: add Prisma schema with Auth.js adapter tables"
 ```
-Expected: `Your database is now in sync with your Prisma schema.`
 
-- [ ] **Step 8: Generate Prisma client**
+---
+
+### Task 4: Create Prisma client singleton
+
+**Files:**
+- Create: `lib/db.ts`
+
+- [ ] **Step 1: Generate Prisma client types**
 
 ```bash
 pnpm prisma generate
 ```
 
-- [ ] **Step 9: Commit**
+Expected: "Generated Prisma Client (vX.X.X) to ./node_modules/@prisma/client"
+
+- [ ] **Step 2: Create lib/db.ts**
+
+```ts
+// lib/db.ts
+import { PrismaClient } from "@prisma/client"
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const db = globalForPrisma.prisma ?? new PrismaClient()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db
+}
+```
+
+- [ ] **Step 3: Run type check**
 
 ```bash
-git add prisma/ src/lib/db.ts .env.example
-git commit -m "chore: add Prisma schema and Neon DB connection"
+pnpm tsc --noEmit
+```
+
+Expected: no errors
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add lib/db.ts
+git commit -m "feat: add Prisma client singleton"
 ```
 
 ---
 
-### Task 4: Configure NextAuth v5
+### Task 5: Install and configure Auth.js v5
 
 **Files:**
-- Create: `src/lib/auth.ts`
-- Create: `src/app/api/auth/[...nextauth]/route.ts`
+- Create: `lib/auth.ts`, `app/api/auth/[...nextauth]/route.ts`
 
-- [ ] **Step 1: Install NextAuth v5 and Prisma adapter**
+- [ ] **Step 1: Install Auth.js and Prisma adapter**
 
 ```bash
 pnpm add next-auth@beta @auth/prisma-adapter
 ```
 
-- [ ] **Step 2: Generate AUTH_SECRET**
+- [ ] **Step 2: Create lib/auth.ts**
 
-```bash
-pnpm dlx auth secret
-```
-Copy the printed value into `.env.local` as `AUTH_SECRET`.
+```ts
+// lib/auth.ts
+import NextAuth from "next-auth"
+import Google from "next-auth/providers/google"
+import { PrismaAdapter } from "@auth/prisma-adapter"
+import { db } from "@/lib/db"
 
-- [ ] **Step 3: Set up Google OAuth credentials**
-
-1. Go to https://console.cloud.google.com
-2. Create or select a project
-3. Navigate to APIs & Services → Credentials
-4. Create OAuth 2.0 Client ID (Web application)
-5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-6. Copy Client ID → `AUTH_GOOGLE_ID` in `.env.local`
-7. Copy Client Secret → `AUTH_GOOGLE_SECRET` in `.env.local`
-
-- [ ] **Step 4: Create src/lib/auth.ts**
-
-```typescript
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { db } from "./db";
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    }),
-  ],
+  providers: [Google],
   pages: {
-    signIn: "/sign-in",
+    signIn: "/login",
+    error: "/error",
   },
-});
+})
 ```
 
-- [ ] **Step 5: Create src/app/api/auth/[...nextauth]/route.ts**
+- [ ] **Step 3: Create API route handler**
 
-```typescript
-import { handlers } from "@/lib/auth";
+Create directory `app/api/auth/[...nextauth]/` and file `route.ts`:
 
-export const { GET, POST } = handlers;
+```ts
+// app/api/auth/[...nextauth]/route.ts
+import { handlers } from "@/lib/auth"
+
+export const { GET, POST } = handlers
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 4: Run type check**
 
 ```bash
-git add src/lib/auth.ts src/app/api/auth/
-git commit -m "feat: add NextAuth v5 with Google provider and Prisma adapter"
+pnpm tsc --noEmit
+```
+
+Expected: no errors
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/auth.ts app/api/
+git commit -m "feat: configure Auth.js v5 with Google provider and Prisma adapter"
 ```
 
 ---
 
-### Task 5: Middleware
+### Task 6: Create middleware
 
 **Files:**
-- Create: `middleware.ts` (project root)
+- Create: `middleware.ts`
 
 - [ ] **Step 1: Create middleware.ts**
 
-```typescript
-export { auth as middleware } from "@/lib/auth";
+```ts
+// middleware.ts
+export { auth as middleware } from "@/lib/auth"
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sign-in).*)"],
-};
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+}
 ```
-This redirects unauthenticated users to `/sign-in` for all routes except the auth API, static assets, and sign-in page itself.
 
-- [ ] **Step 2: Commit**
+This propagates the Auth.js session token on every non-static route. To protect specific routes, replace with a custom handler (see README for example).
+
+- [ ] **Step 2: Run type check**
+
+```bash
+pnpm tsc --noEmit
+```
+
+Expected: no errors
+
+- [ ] **Step 3: Commit**
 
 ```bash
 git add middleware.ts
-git commit -m "feat: add auth middleware for route protection"
+git commit -m "feat: add Auth.js session middleware"
 ```
 
 ---
 
-### Task 6: Sign-In Page
+### Task 7: Create auth pages
 
 **Files:**
-- Create: `src/app/sign-in/page.tsx`
+- Create: `app/(auth)/login/page.tsx`, `app/(auth)/error/page.tsx`
 
-- [ ] **Step 1: Create src/app/sign-in/page.tsx**
+- [ ] **Step 1: Create login page**
 
-```typescript
-import { signIn } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+Create `app/(auth)/login/page.tsx`:
 
-export default function SignInPage() {
+```tsx
+// app/(auth)/login/page.tsx
+import { signIn } from "@/lib/auth"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center">Sign In</CardTitle>
+          <CardTitle>Sign in</CardTitle>
         </CardHeader>
         <CardContent>
           <form
             action={async () => {
-              "use server";
-              await signIn("google");
+              "use server"
+              await signIn("google", { redirectTo: "/" })
             }}
           >
             <Button type="submit" className="w-full">
-              Sign in with Google
+              Continue with Google
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Create error page**
+
+Create `app/(auth)/error/page.tsx`:
+
+```tsx
+// app/(auth)/error/page.tsx
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+export default async function AuthErrorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
+
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Authentication Error</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {error ?? "An unexpected error occurred."}
+          </p>
+          <a href="/login" className="text-sm underline">
+            Try again
+          </a>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+```
+
+Note: `searchParams` is a `Promise` in Next.js 15 — must be awaited.
+
+- [ ] **Step 3: Run type check**
 
 ```bash
-git add src/app/sign-in/
-git commit -m "feat: add sign-in page with Google OAuth button"
+pnpm tsc --noEmit
+```
+
+Expected: no errors
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add "app/(auth)/"
+git commit -m "feat: add login and auth error pages"
 ```
 
 ---
 
-### Task 7: Layout and Home Page
+### Task 8: Update root layout and home page
 
 **Files:**
-- Modify: `src/app/layout.tsx`
-- Modify: `src/app/page.tsx`
+- Modify: `app/layout.tsx`, `app/page.tsx`
 
-- [ ] **Step 1: Replace src/app/layout.tsx**
+- [ ] **Step 1: Replace app/layout.tsx**
 
-```typescript
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { SessionProvider } from "next-auth/react";
-import { auth } from "@/lib/auth";
-import "./globals.css";
+```tsx
+// app/layout.tsx
+import type { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
+import { SessionProvider } from "next-auth/react"
+import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+})
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+})
 
 export const metadata: Metadata = {
   title: "Next.js Boilerplate",
-  description: "Team starter template",
-};
+  description: "Next.js 15 · Tailwind · shadcn/ui · Auth.js · Prisma · Neon",
+}
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
-  const session = await auth();
-
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <SessionProvider session={session}>{children}</SessionProvider>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
-  );
+  )
 }
 ```
 
-- [ ] **Step 2: Replace src/app/page.tsx**
+- [ ] **Step 2: Replace app/page.tsx**
 
-```typescript
-import { auth, signOut } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+```tsx
+// app/page.tsx
+import { auth, signOut } from "@/lib/auth"
+import { Button } from "@/components/ui/button"
 
-export default async function HomePage() {
-  const session = await auth();
+export default async function Home() {
+  const session = await auth()
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="flex flex-col items-center gap-6">
-        <h1 className="text-3xl font-bold">Next.js Boilerplate</h1>
-
-        {session?.user ? (
-          <div className="flex items-center gap-4">
-            <p className="text-gray-600">Welcome, {session.user.name}</p>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
-                  <AvatarImage src={session.user.image ?? ""} />
-                  <AvatarFallback>
-                    {session.user.name?.[0] ?? "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <form
-                    action={async () => {
-                      "use server";
-                      await signOut();
-                    }}
-                  >
-                    <button type="submit" className="w-full text-left">
-                      Sign out
-                    </button>
-                  </form>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <p className="text-gray-500">Not signed in</p>
-        )}
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+      {session ? (
+        <>
+          <p className="text-sm text-muted-foreground">
+            Signed in as {session.user?.email}
+          </p>
+          <form
+            action={async () => {
+              "use server"
+              await signOut({ redirectTo: "/" })
+            }}
+          >
+            <Button type="submit" variant="outline">
+              Sign out
+            </Button>
+          </form>
+        </>
+      ) : (
+        <a href="/login">
+          <Button>Sign in with Google</Button>
+        </a>
+      )}
     </main>
-  );
+  )
 }
+```
+
+- [ ] **Step 3: Run type check**
+
+```bash
+pnpm tsc --noEmit
+```
+
+Expected: no errors
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add app/layout.tsx app/page.tsx
+git commit -m "feat: update layout with SessionProvider and home page with auth state"
+```
+
+---
+
+### Task 9: Create .env.example and README
+
+**Files:**
+- Create: `.env.example`, `README.md`
+
+- [ ] **Step 1: Create .env.example**
+
+```bash
+cat > .env.example << 'EOF'
+# Database — Neon serverless PostgreSQL
+# Get your pooled connection string from https://console.neon.tech
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+
+# Auth.js secret — generate with: openssl rand -base64 32
+AUTH_SECRET=
+
+# Google OAuth — create credentials at https://console.cloud.google.com
+# Authorized redirect URI: http://localhost:3000/api/auth/callback/google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+EOF
+```
+
+- [ ] **Step 2: Create README.md**
+
+```markdown
+# next.js boilerplate
+
+Minimal Next.js 15 starter. Clone, configure env, and you're building.
+
+**Stack:** Next.js 15 App Router · TypeScript strict · Tailwind CSS v4 · shadcn/ui · Auth.js v5 · Prisma · Neon
+
+---
+
+## Quick Start
+
+### 1. Clone and install
+
+\`\`\`bash
+git clone <repo-url> my-app
+cd my-app
+pnpm install
+\`\`\`
+
+### 2. Set up Neon database
+
+1. Create a free account at [neon.tech](https://neon.tech)
+2. Create a new project
+3. Copy the **pooled connection string** from the dashboard
+
+### 3. Set up Google OAuth
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a project → **APIs & Services → Credentials**
+3. **Create Credentials → OAuth 2.0 Client ID** → Web application
+4. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+5. Copy the Client ID and Client Secret
+
+### 4. Configure environment
+
+\`\`\`bash
+cp .env.example .env
+\`\`\`
+
+| Variable | Where to get it |
+|----------|----------------|
+| `DATABASE_URL` | Neon dashboard → Connection string (pooled) |
+| `AUTH_SECRET` | Run `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` | Google Cloud Console → Credentials |
+| `GOOGLE_CLIENT_SECRET` | Google Cloud Console → Credentials |
+
+### 5. Push database schema
+
+\`\`\`bash
+pnpm prisma db push
+\`\`\`
+
+### 6. Start dev server
+
+\`\`\`bash
+pnpm dev
+\`\`\`
+
+Open [http://localhost:3000](http://localhost:3000) — click **Sign in with Google**.
+
+---
+
+## Project Structure
+
+\`\`\`
+├── app/
+│   ├── layout.tsx              # Root layout (SessionProvider)
+│   ├── page.tsx                # Home — shows auth state
+│   └── (auth)/
+│       ├── login/page.tsx      # Google sign-in
+│       └── error/page.tsx      # Auth error display
+├── components/ui/              # shadcn/ui components
+├── lib/
+│   ├── auth.ts                 # Auth.js config (Google + Prisma adapter)
+│   └── db.ts                   # Prisma singleton
+├── prisma/schema.prisma        # DB schema (Auth.js tables)
+└── middleware.ts               # Session propagation
+\`\`\`
+
+---
+
+## Protecting Routes
+
+Edit `middleware.ts` to redirect unauthenticated users:
+
+\`\`\`ts
+import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server"
+
+export default auth((req) => {
+  if (!req.auth && req.nextUrl.pathname.startsWith("/dashboard")) {
+    return NextResponse.redirect(new URL("/login", req.url))
+  }
+})
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+}
+\`\`\`
+
+## Adding shadcn Components
+
+\`\`\`bash
+pnpm dlx shadcn@latest add <component-name>
+\`\`\`
+
+## Deploying to Vercel
+
+1. Push to GitHub and import in [Vercel](https://vercel.com)
+2. Add all four env vars in the Vercel dashboard
+3. Update Google OAuth redirect URI to `https://your-domain.com/api/auth/callback/google`
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/app/layout.tsx src/app/page.tsx
-git commit -m "feat: update layout with SessionProvider and auth-aware home page"
+git add .env.example README.md
+git commit -m "docs: add .env.example and README setup guide"
 ```
 
 ---
 
-### Task 8: Final Verification
+### Task 10: Final verification
 
-- [ ] **Step 1: Start dev server**
+**Files:** None (verification only)
+
+- [ ] **Step 1: Type check**
+
+```bash
+pnpm tsc --noEmit
+```
+
+Expected: exits with code 0, no errors
+
+- [ ] **Step 2: Lint**
+
+```bash
+pnpm lint
+```
+
+Expected: no errors or warnings
+
+- [ ] **Step 3: Push schema to Neon**
+
+Ensure `.env` is filled with real values, then:
+
+```bash
+pnpm prisma db push
+```
+
+Expected: "Your database is now in sync with your Prisma schema."
+
+- [ ] **Step 4: Smoke test the full auth flow**
 
 ```bash
 pnpm dev
 ```
 
-- [ ] **Step 2: Test unauthenticated redirect**
+Verify:
+1. `http://localhost:3000` → shows "Sign in with Google" button
+2. Click button → navigates to `/login`
+3. Click "Continue with Google" → Google OAuth consent screen
+4. Complete sign-in → redirected to `/` showing "Signed in as [your email]"
+5. Click "Sign out" → session cleared, "Sign in with Google" button returns
 
-Open http://localhost:3000 — should redirect to `/sign-in`.
-
-- [ ] **Step 3: Test Google login**
-
-Click "Sign in with Google", complete OAuth flow — should redirect to home page showing user avatar and welcome message.
-
-- [ ] **Step 4: Test sign-out**
-
-Click avatar → "Sign out" — should redirect back to `/sign-in`.
-
-- [ ] **Step 5: Verify DB records**
+- [ ] **Step 5: Final commit**
 
 ```bash
-pnpm prisma studio
-```
-Open http://localhost:5555 — check that `User`, `Account`, `Session` tables have records.
-
-- [ ] **Step 6: Final commit**
-
-```bash
-git add .
-git commit -m "chore: finalize boilerplate setup"
+git add -A
+git commit -m "chore: boilerplate complete"
 ```
