@@ -1,11 +1,20 @@
 // app/layout.tsx
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Inter, Lora, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Using Inter as SoDoSans substitute (proprietary Starbucks font)
+const inter = Inter({
+  variable: "--font-sodo-sans",
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
+})
+
+// Lora for Rewards serif moments (Lander Tall substitute)
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
 })
 
 const geistMono = Geist_Mono({
@@ -24,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-background">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${lora.variable} ${geistMono.variable} font-sans antialiased`}
       >
         {children}
       </body>
