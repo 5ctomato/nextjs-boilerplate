@@ -11,7 +11,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section - Cream canvas with Green feature */}
-      <header className="bg-house-green text-white py-16">
+      <header className="bg-[#1E3932] text-white py-16">
         <div className="container mx-auto px-4 md:px-6 lg:px-10">
           <h1 className="text-4xl md:text-5xl font-semibold tracking-[-0.01em] text-white mb-4">
             Welcome
@@ -23,7 +23,7 @@ export default async function Home() {
       </header>
 
       {/* Main Content - Neutral Warm canvas */}
-      <main className="bg-neutral-warm py-12 md:py-16">
+      <main className="bg-[#f2f0eb] py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-6 lg:px-10">
           <div className="max-w-xl mx-auto">
             <Card className="mb-8">
@@ -74,7 +74,7 @@ export default async function Home() {
       </main>
 
       {/* Footer - House Green */}
-      <footer className="bg-house-green text-white py-8">
+      <footer className="bg-[#1E3932] text-white py-8">
         <div className="container mx-auto px-4 md:px-6 lg:px-10 text-center">
           <p className="text-sm text-white/70">
             Built with Next.js 16 · Tailwind CSS v4 · shadcn/ui

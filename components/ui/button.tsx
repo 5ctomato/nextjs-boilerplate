@@ -9,13 +9,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Primary Filled - Green Accent (#00754A)
-        default: "bg-green-accent text-white border-green-accent hover:bg-green-accent/90",
+        default: "bg-[#00754A] text-white border-[#00754A] hover:bg-[#00754A]/90",
         // Primary Outlined - Green Accent border
         outline:
-          "border-green-accent bg-transparent text-green-accent hover:bg-green-accent/5",
+          "border-[#00754A] bg-transparent text-[#00754A] hover:bg-[#00754A]/5",
         // Secondary - Ceramic/warm neutral
         secondary:
-          "bg-ceramic text-foreground border-ceramic hover:bg-ceramic/80",
+          "bg-[#edebe9] text-foreground border-[#edebe9] hover:bg-[#edebe9]/80",
         // Ghost - transparent with hover
         ghost:
           "hover:bg-muted hover:text-foreground",
@@ -23,13 +23,13 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20",
         // Link style
-        link: "text-green-accent underline-offset-4 hover:underline",
+        link: "text-[#00754A] underline-offset-4 hover:underline",
         // Black Filled - for "Join now" style CTAs
         black: "bg-black text-white border-black hover:bg-black/90",
         // Dark Outlined - for "Sign in" style
         "dark-outline": "border-foreground bg-transparent text-foreground hover:bg-foreground/5",
         // White Filled - for CTAs on dark green backgrounds
-        "inverse": "bg-white text-green-accent border-white hover:bg-white/90",
+        "inverse": "bg-white text-[#00754A] border-white hover:bg-white/90",
         // White Outlined - for secondary CTAs on dark backgrounds
         "inverse-outline": "border-white bg-transparent text-white hover:bg-white/10",
       },
