@@ -1,4 +1,6 @@
 // app/page.tsx
+import Link from "next/link"
+
 import { auth, signOut } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 
@@ -7,11 +9,17 @@ export default async function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <Link href="/posts">
+        <Button variant="outline">Browse posts</Button>
+      </Link>
       {session ? (
         <>
           <p className="text-sm text-muted-foreground">
             Signed in as {session.user?.email}
           </p>
+          <Link href="/posts/new">
+            <Button>Write a post</Button>
+          </Link>
           <form
             action={async () => {
               "use server"
